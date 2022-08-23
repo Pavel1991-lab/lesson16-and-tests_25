@@ -10,27 +10,43 @@
 #
 #
 import prettytable
-from sqlalchemy import create_engine
-from sqlalchemy.orm import declarative_base, sessionmaker, Query
+from flask import Flask
+from flask_sqlalchemy import SQLAlchemy
+from sqlalchemy.sql import text
+
+app = Flask(__name__)
+app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///:memory:'
+app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+db = SQLAlchemy(app)
 
 
-engine = create_engine('sqlite:///:memory:')
-db = declarative_base(bind=engine)
-Session = sessionmaker(bind=engine)
+
+with app.app_context():
+    class City(db.Model):
+        __tablename__ = 'city'
+
+        id = db.Column(db.Integer, primary_key=True)
+        name = db.Column(db.String(100))
+        country_ru = db.Column(db.String(100))
+        population = db.Column(db.Integer)
 
 
-class City(db):
-    __tablename__ = 'city'
-    pass  # TODO добавьте в модель необходимые колонки
+    db.drop_all()
+    db.create_all()
+
+
+    # TODO определите поля модели здесь
 
 
 # Не удаляйте код ниже, он нужен для корректного отображения
 # созданной вами модели при запуске файла
+with app.app_context():
 
-db.metadata.create_all()
-cursor = engine.execute(Query(City).statement).cursor
-mytable = prettytable.from_db_cursor(cursor)
-mytable.max_width = 30
+    db.create_all()
+    session = db.session()
+    cursor = session.execute(text(f"SELECT * from {City.__tablename__}")).cursor
+    mytable = prettytable.from_db_cursor(cursor)
+    mytable.max_width = 30
 
 
 if __name__ == '__main__':
